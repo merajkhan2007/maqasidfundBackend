@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+  LATE
+}
+
+enum LoanStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID_OFF
+}
+
+model User {
+  id              Int       @id @default(autoincrement())
+  name            String
+  mobile          String    @unique
+  email           String    @unique
+  address         String?
+  idProofUrl      String?
+  password        String
+  monthlyAmount   Float     @default(0)
+  joinDate        DateTime  @default(now())
+  status          Status    @default(ACTIVE)
+  role            Role      @default(MEMBER)
+  
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+  
+  deposits        Deposit[]
+  loans           Loan[]
+  notifications   Notification[]
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Deposit {
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  user            User          @relation(fields: [userId], references: [id])
+  month           String        // e.g., "August 2026" or YYYY-MM
+  amount          Float
+  status          PaymentStatus @default(PENDING)
+  paymentMethod   String?       // Cash, Bank Transfer, UPI
+  transactionId   String?
+  notes           String?
+  date            DateTime?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Loan {
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  user            User          @relation(fields: [userId], references: [id])
+  requestedAmount Float
+  reason          String?
+  requestedDuration Int         // in months
+  
+  // Admin fields
+  status          LoanStatus    @default(PENDING)
+  approvedAmount  Float?
+  interestRate    Float?        // percentage
+  emi             Float?
+  remainingBalance Float?
+  approvedAt      DateTime?     // when the loan was approved
+  
+  payments        LoanPayment[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model LoanPayment {
+  id              Int           @id @default(autoincrement())
+  loanId          Int
+  loan            Loan          @relation(fields: [loanId], references: [id])
+  amount          Float
+  dueDate         DateTime
+  paidDate        DateTime?
+  status          PaymentStatus @default(PENDING)
+  transactionId   String?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Notification {
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  user            User          @relation(fields: [userId], references: [id])
+  title           String
+  message         String
+  isRead          Boolean       @default(false)
+  type            String        // DEPOSIT_REMINDER, LOAN_APPROVAL, EMI_REMINDER
+  
+  createdAt       DateTime      @default(now())
+}
