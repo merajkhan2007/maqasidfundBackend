@@ -51,7 +51,7 @@ export const createMember = async (req: AuthRequest, res: Response): Promise<voi
         res.status(201).json({ message: 'User created successfully', userId: user.id });
     } catch (error) {
         if (error instanceof z.ZodError) {
-            res.status(400).json({ error: error.errors });
+            res.status(400).json({ error: error.issues });
             return;
         }
         console.error(error);
@@ -158,7 +158,7 @@ export const updateMember = async (req: AuthRequest, res: Response): Promise<voi
         res.json(updatedUser);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            res.status(400).json({ error: error.errors });
+            res.status(400).json({ error: error.issues });
             return;
         }
         console.error(error);

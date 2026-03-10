@@ -29,7 +29,7 @@ export const applyLoan = async (req: AuthRequest, res: Response): Promise<void> 
         res.status(201).json(loan);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            res.status(400).json({ error: (error as z.ZodError).errors });
+            res.status(400).json({ error: (error as z.ZodError).issues });
             return;
         }
         console.error(error);
@@ -143,7 +143,7 @@ export const updateLoan = async (req: AuthRequest, res: Response): Promise<void>
         res.json(updatedLoan);
     } catch (error) {
         if (error instanceof z.ZodError) {
-            res.status(400).json({ error: (error as z.ZodError).errors });
+            res.status(400).json({ error: (error as z.ZodError).issues });
             return;
         }
         console.error(error);
@@ -240,7 +240,7 @@ export const recordLoanPayment = async (req: AuthRequest, res: Response): Promis
         res.json({ payment, loan: updatedLoan });
     } catch (error) {
         if (error instanceof z.ZodError) {
-            res.status(400).json({ error: (error as z.ZodError).errors });
+            res.status(400).json({ error: (error as z.ZodError).issues });
             return;
         }
         console.error(error);

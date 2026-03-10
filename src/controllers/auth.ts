@@ -56,7 +56,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         res.status(201).json({ message: 'User registered successfully', userId: user.id });
     } catch (error) {
         if (error instanceof z.ZodError) {
-            res.status(400).json({ error: error.errors });
+            res.status(400).json({ error: error.issues });
             return;
         }
         console.error(error);
@@ -110,7 +110,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         });
     } catch (error) {
         if (error instanceof z.ZodError) {
-            res.status(400).json({ error: error.errors });
+            res.status(400).json({ error: error.issues });
             return;
         }
         console.error(error);
@@ -191,7 +191,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
         res.json({ message: 'If that email is registered, a reset link has been sent.' });
     } catch (error) {
         if (error instanceof z.ZodError) {
-            res.status(400).json({ error: error.errors });
+            res.status(400).json({ error: error.issues });
             return;
         }
         console.error(error);
@@ -238,7 +238,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
         res.json({ message: 'Password has been successfully updated. You can now log in.' });
     } catch (error) {
         if (error instanceof z.ZodError) {
-            res.status(400).json({ error: error.errors });
+            res.status(400).json({ error: error.issues });
             return;
         }
         console.error(error);
