@@ -169,16 +169,68 @@ export const updateMember = async (req: AuthRequest, res: Response): Promise<voi
 export const deleteMember = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
+        const userId = Number(id);
 
-        // Hard delete or soft delete? We'll use soft delete by making INACTIVE
-        await prisma.user.update({
-            where: { id: Number(id) },
-            data: { status: 'INACTIVE' }
+        if (isNaN(userId)) {
+            res.status(400).json({ error: 'Invalid user ID' });
+            return;
+        }
+
+        // Check if the user trying to be deleted is an admin, and prevent accidental self-deletion
+        const userToDelete = await prisma.user.findUnique({
+             where: { id: userId },
+             select: { role: true }
         });
 
-        res.json({ message: 'Member deactivated' });
+        if (!userToDelete) {
+             res.status(404).json({ error: 'User not found' });
+             return;
+        }
+
+        if (userToDelete.role === 'ADMIN' && req.user?.id === userId) {
+            res.status(400).json({ error: 'Cannot delete your own admin account.' });
+            return;
+        }
+
+        // Use a transaction to safely delete all related records
+        await prisma.$transaction(async (tx) => {
+            // 1. Delete Notifications
+            await tx.notification.deleteMany({
+                where: { userId }
+            });
+
+            // 2. Delete Deposits
+            await tx.deposit.deleteMany({
+                where: { userId }
+            });
+
+            // 3. Delete LoanPayments (need to find loans first)
+            const userLoans = await tx.loan.findMany({
+                where: { userId },
+                select: { id: true }
+            });
+            const loanIds = userLoans.map(l => l.id);
+
+            if (loanIds.length > 0) {
+                 await tx.loanPayment.deleteMany({
+                      where: { loanId: { in: loanIds } }
+                 });
+            }
+
+            // 4. Delete Loans
+            await tx.loan.deleteMany({
+                where: { userId }
+            });
+
+            // 5. Finally, delete User
+            await tx.user.delete({
+                where: { id: userId }
+            });
+        });
+
+        res.json({ message: 'Member permanently deleted' });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Server error' });
+        console.error('Error deleting member:', error);
+        res.status(500).json({ error: 'Failed to delete member' });
     }
 };
